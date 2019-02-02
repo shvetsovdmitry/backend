@@ -24,12 +24,14 @@ except mysql.connector.Error as err:
 # Dictionary with all the csv table.
 csv_dict = dict()
 # Fill the header of the table.
-csv_dict['Date'] = [] 
-csv_dict['Info'] = [] 
-csv_dict['Sum'] = [] 
+csv_dict['Date'] = []
+csv_dict['Info'] = []
+csv_dict['Sum'] = []
+# Reading file.
 with open('payments.csv') as f: 
     csv_reader = csv.DictReader(f, delimiter=',') 
     header = True
+    # Filling the csv_dict.
     for row in csv_reader: 
         # KOSTIL'!!!!!!!!
         if header:
@@ -40,27 +42,14 @@ with open('payments.csv') as f:
             csv_dict['Sum'].append(row['Sum']) 
 
 
-"""Collecting all INNs from DB."""
-
-"""### Вытащить таблицу активности пользователей"""
-
-"""SQL_INN = 'SELECT * FROM users'
-cursor.execute(SQL_INN)
-# Raw INNs from database (becomes in a list(tuple()) structure).
-db_raw = cursor.fetchall()
-# Normalize structure (to list).
-db_clean_inns = []
-for i in range(len(db_raw)):
-    db_clean_inns.append(db_raw[i][2])"""
-
-
-
-"""TEST"""
-"""Creating dict(list()) structure from DB. Collecting all INNs from DB."""
+"""Collecting all INNs from DB.
+Creating dict(list()) structure from DB. Collecting all INNs from DB."""
 SQL_TEST = 'SELECT * FROM users'
 cursor.execute(SQL_TEST)
 db_raw = cursor.fetchall()
+# Dict with structured info from DB.
 db_dict = dict()
+# List with INNs from DB.
 db_clean_inns = []
 for k in range(len(db_raw)):
     db_dict.setdefault(db_raw[k][2])
@@ -79,17 +68,12 @@ for raw_str in csv_dict['Info']:
 
 
 """Bring it to normal."""
-# Find db_clean_inns in csv_raw_inns (now list(Match object)).
-csv_almost_clean_inns = [] 
+# Find db_clean_inns in csv_raw_inns.
+csv_clean_inns = [] 
 for i in range(len(csv_raw_inns)): 
     for j in range(len(db_clean_inns)): 
         if re.search(db_clean_inns[j], csv_raw_inns[i]) != None: 
-            csv_almost_clean_inns.append(re.search(db_clean_inns[j], csv_raw_inns[i]))
-
-# Normalized csv_clean_inns (became to list()).
-csv_clean_inns = []
-for i in csv_almost_clean_inns:
-    csv_clean_inns.append(i.group(0))
+            csv_clean_inns.append((re.search(db_clean_inns[j], csv_raw_inns[i])).group(0))
 
 
 """Compare two lists to get interceptions."""
