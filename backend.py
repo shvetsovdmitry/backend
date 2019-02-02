@@ -18,6 +18,8 @@ except mysql.connector.Error as err:
         print(err)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+"""==========PARSING==========="""
+
 """Parsing csv file to dict(list()) structure."""
 # Dictionary with all the csv table.
 csv_dict = dict()
@@ -39,14 +41,34 @@ with open('payments.csv') as f:
 
 
 """Collecting all INNs from DB."""
-SQL_INN = 'SELECT inn FROM users'
+
+"""### Вытащить таблицу активности пользователей"""
+
+"""SQL_INN = 'SELECT * FROM users'
 cursor.execute(SQL_INN)
 # Raw INNs from database (becomes in a list(tuple()) structure).
-db_raw_inns = cursor.fetchall()
+db_raw = cursor.fetchall()
 # Normalize structure (to list).
 db_clean_inns = []
-for i in range(len(db_raw_inns)):
-    db_clean_inns.append(db_raw_inns[i][0])
+for i in range(len(db_raw)):
+    db_clean_inns.append(db_raw[i][2])"""
+
+
+
+"""TEST"""
+"""Creating dict(list()) structure from DB. Collecting all INNs from DB."""
+SQL_TEST = 'SELECT * FROM users'
+cursor.execute(SQL_TEST)
+db_raw = cursor.fetchall()
+db_dict = dict()
+db_clean_inns = []
+for k in range(len(db_raw)):
+    db_dict.setdefault(db_raw[k][2])
+    db_dict[db_raw[k][2]] = list()
+    for i in range(3):
+        db_dict[db_raw[k][2]].append(db_raw[k][i])
+
+    db_clean_inns.append(list(db_dict.keys())[k])
 
 
 """Collecting all INNs from csv file."""
