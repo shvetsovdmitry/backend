@@ -1,8 +1,12 @@
+#!/usr/bin/env python3
 import re
 import csv
 import mysql.connector
 from mysql.connector import errorcode
-from datetime import date
+import datetime
+from termcolor import colored
+import time
+
 
 """Connecting to the database."""
 try:
@@ -13,17 +17,26 @@ try:
                                 unix_socket='/var/run/mysqld/mysqld.sock'
                                 )
     cursor = conn.cursor()
-# FIX THIS SHIT
+
 except mysql.connector.Error as err:
     if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-        print('Something is wrong with your user name or password.')
+        print('[{0}] - {1}'.format(colored('ERROR!', 'red'),
+                                   colored('Wrong user name or password!',
+                                           'pink')))
     elif err.errno == errorcode.ER_BAD_DB_ERROR:
-        print('Database does not exists.')
+        print('[{0}] - {1}'.format(colored('ERROR!', 'red'),
+                                   colored('Database does not exists!',
+                                           'pink')))
     else:
-        print(err)
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        print('[{0}] - {1}'.format(colored('ERROR!', 'red'),
+                                   colored('An error has occured!',
+                                           'pink')))
+
 if conn.is_connected():
-    print('*** MySQL connection established. ***')
+    print('[--{0}--] - {1}'.format(colored('OK', 'green'),
+                                   colored('Successfully connected to MySQL!',
+                                           'yellow')))
+
 
 
 """1. Спарсить данные из входного файла."""
@@ -49,6 +62,19 @@ with open('payments.csv') as f:
             csv_dict['Info'].append(row['Info'])
             csv_dict['Sum'].append(row['Sum'])
 
+
+"""csv_dict = dict()
+with open('payments.csv') as f:
+    csv_reader = csv.DictReader(f, delimiter=',')
+    for row in csv_reader:
+        if len(csv_dict.keys()) == 0:
+            csv_dict = csv_dict.fromkeys(csv_reader.fieldnames)
+            for i in list(csv_dict.keys()):
+                csv_dict[i] = []
+        else:
+            csv_dict['Date'].append(row['Date'])
+            csv_dict['Info'].append(row['Info'])
+            csv_dict['Sum'].append(row['Sum'])"""
 
 """Collecting all INNs from DB.
 Creating dict(list()) structure from DB. Collecting all INNs from DB."""
@@ -92,10 +118,10 @@ for i in range(len(csv_raw_inns)):
 """Compare two set(list)'s to get interceptions."""
 # Set with paid users found in csv file via intersection operation.
 paid_users = set(csv_clean_inns) & set(db_clean_inns)
-# Output paid users INNs.
+"""# Output paid users INNs.
 print('Users who paid:')
 for i in range(len(paid_users)):
-    print('{0}: {1}'.format(i + 1, list(paid_users)[i]))
+    print('{0}: {1}'.format(i + 1, list(paid_users)[i]))"""
 
 
 """3. Если пользователь найден в базе и активен,
@@ -103,9 +129,9 @@ for i in range(len(paid_users)):
 в таблицу платежей в БД. Если ИНН не найден или пользователь неактивен,
 данные не заносятся."""
 
-# Find if account active then write payment info in DB.
+"""# Find if account active then write payment info in DB.
 for key in list(db_dict.keys()):
-    print(db_dict[key][3])
+    print(db_dict[key][3])"""
 
 
 """Поиск по совпадению в таблице csv.
@@ -146,6 +172,7 @@ ids = list(cursor.fetchall())
 index = len(ids)
 
 
+"""Write coincidences to DB in payments table."""
 for k, v in coincidences.items():
         for i in range(len(v)):
             try:
@@ -155,41 +182,25 @@ for k, v in coincidences.items():
                     (
                         index, k, v[i][0],
                         float(v[i][2].replace(',', '.')
-                        if re.search(',', v[i][2]) is not None else v[i][2])
+                              if re.search(',', v[i][2]) is not None
+                              else v[i][2])
                     )
                 )
                 conn.commit()
-                print('Writing to DB <- {}'.format(v[i][0]))
+                print('[{0}] - {1}'.format(
+                    colored('STATUS', 'yellow'),
+                    colored('Writing to DB <- {}'.format(k), 'green')))
                 index += 1
             except mysql.connector.Error as error:
                 conn.rollback()
-                print('Error occured -> {}'.format(error))
-
-
-
-
-
-
-
-"""for user in list(db_dict.keys()):
-    if user in list(paid_users):
-        if db_dict[user][3] == 0:
-            print('Active paid user. Send to DB -> {}'.format(db_dict[user][2]))
-            try:
-                cursor.execute(INSERT INTO payments VALUES (%s, %s, %s, %s), (index, db_dict[user][2], db_dict[user][0], db_dict[user][1]))
-                conn.commit()
-            except:
-                conn.rollback()
-            finally:
-                index += 1
-        else:
-            print('Inactive user. Do not send to DB -> {}'.format(db_dict[user][2]))
-    else:
-        print('User payment not found. Do not send to DB -> {}'.format(db_dict[user][2]))"""
-
+                print('[{0}] - {1}'.format(
+                                    colored('ERROR!', 'red'),
+                                    colored(error, 'pink')))
 
 
 if conn.is_connected():
     cursor.close()
     conn.close()
-    print('*** MySQL connection closed. ***')
+    print('[--{0}--] - {1}'.format(colored('OK', 'green'),
+                                   colored('Connection to MySQL closed!',
+                                           'yellow')))
