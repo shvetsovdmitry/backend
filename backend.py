@@ -6,6 +6,40 @@ from mysql.connector import errorcode
 import datetime
 from termcolor import colored
 import time
+import argparse
+
+
+def connect_to_db(user_name: str, db_name: str):
+    """Connecting to the database."""
+    db_conn = None
+    try:
+        db_conn = mysql.connector.connect(
+                                    user=user_name,
+                                    host='127.0.0.1',
+                                    database=db_name if db_name is not None else 'backend',
+                                    unix_socket='/var/run/mysqld/mysqld.sock'
+                                    )
+        cursor = db_conn.cursor()
+
+    except mysql.connector.Error as err:
+        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+            print_msg('error', 'Wrong user name or password')
+        elif err.errno == errorcode.ER_BAD_DB_ERROR:
+            print_msg('error', 'Database does not exists!')
+        else:
+            print_msg('error', 'An error has occured!')
+
+    if db_conn.is_connected():
+        print_msg('ok', 'Successfully connected to MySQL!')
+        return db_conn
+
+
+parser = argparse.ArgumentParser(description='Parsing file with payments info and make changes in database.')
+parser.add_argument('-u','--user', required=True, help='User name for MySQL.')
+parser.add_argument('-d', '--database', required=False, help='Database name ("backend" by default).')
+parser.add_argument('-f', '--file', required=False, help='CSV file with payments info ("payments.csv" by default).')
+
+args = vars(parser.parse_args())
 
 
 def print_msg(status: str, msg: str):
@@ -22,47 +56,36 @@ def print_msg(status: str, msg: str):
                                    colored(msg, 'green')))
 
 
-"""Connecting to the database."""
-try:
-    conn = mysql.connector.connect(
-                                user='dmitry',
-                                host='127.0.0.1',
-                                database='backend',
-                                unix_socket='/var/run/mysqld/mysqld.sock'
-                                )
-    cursor = conn.cursor()
-
-except mysql.connector.Error as err:
-    if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-        print_msg('error', 'Wrong user name or password')
-    elif err.errno == errorcode.ER_BAD_DB_ERROR:
-        print_msg('error', 'Database does not exists!')
-    else:
-        print_msg('error', 'An error has occured!')
-
-if conn.is_connected():
-    print_msg('ok', 'Successfully connected to MySQL!')
+conn = connect_to_db(args['user'], args['database'])
+cursor = conn.cursor()
 
 
 """1. Спарсить данные из входного файла."""
 
 """Parsing csv file to dict(list()) structure."""
-# Dictionary with all the csv table.
-csv_dict = dict()
+
 # Reading file.
-with open('payments.csv') as f:
-    csv_reader = csv.DictReader(f, delimiter=',')
-    for row in csv_reader:
-        # Filling the header of the table.
-        if len(csv_dict.keys()) == 0:
-            csv_dict = csv_dict.fromkeys(csv_reader.fieldnames)
-            for i in list(csv_dict.keys()):
-                csv_dict[i] = []
-        # Filling the csv_dict.
-        else:
-            csv_dict['Date'].append(row['Date'])
-            csv_dict['Info'].append(row['Info'])
-            csv_dict['Sum'].append(row['Sum'])
+def create_csv_dict(file_name: str):
+    csv_temp_dict = dict()
+    with open('payments.csv' if file_name is None else file_name) as f:
+        csv_reader = csv.DictReader(f, delimiter=',')
+        for row in csv_reader:
+            # Filling the header of the table.
+            if len(csv_temp_dict.keys()) == 0:
+                csv_temp_dict = csv_temp_dict.fromkeys(csv_reader.fieldnames)
+                for i in list(csv_temp_dict.keys()):
+                    csv_temp_dict[i] = []
+            # Filling the csv_dict.
+            else:
+                csv_temp_dict['Date'].append(row['Date'])
+                csv_temp_dict['Info'].append(row['Info'])
+                csv_temp_dict['Sum'].append(row['Sum'])
+    return csv_temp_dict
+
+
+# Dictionary with all the csv table.
+csv_dict = create_csv_dict(args['file'])
+
 
 """Collecting all INNs from DB.
 Creating dict(list()) structure from DB. Collecting all INNs from DB."""
