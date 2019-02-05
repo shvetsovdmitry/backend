@@ -8,6 +8,20 @@ from termcolor import colored
 import time
 
 
+def print_msg(status: str, msg: str):
+    """Print status messages.
+    status = 'ok', 'status' or 'error'."""
+    if status == 'ok':
+        print('[--{0}--] - {1}'.format(colored('OK', 'green'),
+                                       colored(msg, 'yellow')))
+    elif status == 'error':
+        print('[{0}] - {1}'.format(colored('ERROR!', 'red'),
+                                   colored(msg, 'pink')))
+    elif status == 'status':
+        print('[{0}] - {1}'.format(colored('STATUS', 'yellow'),
+                                   colored(msg, 'green')))
+
+
 """Connecting to the database."""
 try:
     conn = mysql.connector.connect(
@@ -20,23 +34,14 @@ try:
 
 except mysql.connector.Error as err:
     if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-        print('[{0}] - {1}'.format(colored('ERROR!', 'red'),
-                                   colored('Wrong user name or password!',
-                                           'pink')))
+        print_msg('error', 'Wrong user name or password')
     elif err.errno == errorcode.ER_BAD_DB_ERROR:
-        print('[{0}] - {1}'.format(colored('ERROR!', 'red'),
-                                   colored('Database does not exists!',
-                                           'pink')))
+        print_msg('error', 'Database does not exists!')
     else:
-        print('[{0}] - {1}'.format(colored('ERROR!', 'red'),
-                                   colored('An error has occured!',
-                                           'pink')))
+        print_msg('error', 'An error has occured!')
 
 if conn.is_connected():
-    print('[--{0}--] - {1}'.format(colored('OK', 'green'),
-                                   colored('Successfully connected to MySQL!',
-                                           'yellow')))
-
+    print_msg('ok', 'Successfully connected to MySQL!')
 
 
 """1. Спарсить данные из входного файла."""
@@ -44,45 +49,28 @@ if conn.is_connected():
 """Parsing csv file to dict(list()) structure."""
 # Dictionary with all the csv table.
 csv_dict = dict()
-# Fill the header of the table.
-csv_dict['Date'] = []
-csv_dict['Info'] = []
-csv_dict['Sum'] = []
 # Reading file.
 with open('payments.csv') as f:
     csv_reader = csv.DictReader(f, delimiter=',')
-    header = True
-    # Filling the csv_dict.
     for row in csv_reader:
-        # KOSTIL'!!!!!!!!
-        if header:
-            header = False
+        # Filling the header of the table.
+        if len(csv_dict.keys()) == 0:
+            csv_dict = csv_dict.fromkeys(csv_reader.fieldnames)
+            for i in list(csv_dict.keys()):
+                csv_dict[i] = []
+        # Filling the csv_dict.
         else:
             csv_dict['Date'].append(row['Date'])
             csv_dict['Info'].append(row['Info'])
             csv_dict['Sum'].append(row['Sum'])
 
-
-"""csv_dict = dict()
-with open('payments.csv') as f:
-    csv_reader = csv.DictReader(f, delimiter=',')
-    for row in csv_reader:
-        if len(csv_dict.keys()) == 0:
-            csv_dict = csv_dict.fromkeys(csv_reader.fieldnames)
-            for i in list(csv_dict.keys()):
-                csv_dict[i] = []
-        else:
-            csv_dict['Date'].append(row['Date'])
-            csv_dict['Info'].append(row['Info'])
-            csv_dict['Sum'].append(row['Sum'])"""
-
 """Collecting all INNs from DB.
 Creating dict(list()) structure from DB. Collecting all INNs from DB."""
-SQL_TEST = 'SELECT * FROM users'
-cursor.execute(SQL_TEST)
+SQL_QUERY = 'SELECT * FROM users'
+cursor.execute(SQL_QUERY)
 db_raw = cursor.fetchall()
 # Dict with structured info from DB.
-db_dict = dict()
+db_dict = {}
 # List with INNs from DB.
 db_clean_inns = []
 for k in range(len(db_raw)):
@@ -111,6 +99,7 @@ for i in range(len(csv_raw_inns)):
             if db_dict[result][3] == 0:
                 csv_clean_inns.append(result)
 
+
 """2. Для каждой строки по ИНН (подразумевается,
 что ИНН состоит из 12 цифр и всегда присутствует в столбце “Информация”)
 найти пользователя, от которого поступила оплата."""
@@ -118,10 +107,7 @@ for i in range(len(csv_raw_inns)):
 """Compare two set(list)'s to get interceptions."""
 # Set with paid users found in csv file via intersection operation.
 paid_users = set(csv_clean_inns) & set(db_clean_inns)
-"""# Output paid users INNs.
-print('Users who paid:')
-for i in range(len(paid_users)):
-    print('{0}: {1}'.format(i + 1, list(paid_users)[i]))"""
+not_paid_users = set(db_clean_inns) - set(csv_clean_inns)
 
 
 """3. Если пользователь найден в базе и активен,
@@ -129,23 +115,15 @@ for i in range(len(paid_users)):
 в таблицу платежей в БД. Если ИНН не найден или пользователь неактивен,
 данные не заносятся."""
 
-"""# Find if account active then write payment info in DB.
-for key in list(db_dict.keys()):
-    print(db_dict[key][3])"""
-
-
-"""Поиск по совпадению в таблице csv.
-Если пользователь активен и найден - записываем инфо об оплатах в БД.
-Если пользователь не найден - записываем "Пользователь с таким ИНН не найден."
-Если пользователь неактивен - записываем "Пользователь неактивен."."""
-
-
 """Creating dict with keys from paid_users list."""
 coincidences = dict.fromkeys(paid_users)
 # Fill the dict with empty lists
 for i in paid_users:
     coincidences[i] = []
 
+
+result = csv_dict.copy()
+result['Result'] = [' ' for i in range(len(result['Date']))]
 
 """Find all coincidences with paid users."""
 for i in range(len(csv_dict['Info'])):
@@ -163,7 +141,30 @@ for i in range(len(csv_dict['Info'])):
                 single_coincidence.append(cur_date)
                 single_coincidence.append(csv_dict['Info'][i])
                 single_coincidence.append(csv_dict['Sum'][i])
+                result['Result'][i] = 'OK'
                 coincidences[list(paid_users)[j]].append(single_coincidence)
+
+
+"""Find not paid users and check his activity."""
+for i in range(len(csv_dict['Date'])):
+    if result['Result'][i] == ' ':
+        subresult = []
+        for j in range(len(paid_users)):
+            if re.search(list(paid_users)[j], csv_dict['Info'][i]) is not None:
+                subresult.append(True)
+            else:
+                subresult.append(False)
+        if all(subresult) is False:
+            for k in range(len(not_paid_users)):
+                if re.search(list(not_paid_users)[k], csv_dict['Info'][i]) is not None:
+                    if db_dict[list(not_paid_users)[k]][3] == 1:
+                        result['Result'][i] = 'Пользователь не активен.'
+                    else:
+                        result['Result'][i] = 'Пользователь с таким ИНН не найден.'
+
+for i in range(len(result['Result'])):
+    if result['Result'][i] == ' ':
+        result['Result'][i] = 'Пользователь с таким ИНН не найден.'
 
 
 """Find the last index in payments table."""
@@ -187,20 +188,14 @@ for k, v in coincidences.items():
                     )
                 )
                 conn.commit()
-                print('[{0}] - {1}'.format(
-                    colored('STATUS', 'yellow'),
-                    colored('Writing to DB <- {}'.format(k), 'green')))
+                print_msg('status', 'Writing to DB <- {}'.format(k))
                 index += 1
             except mysql.connector.Error as error:
                 conn.rollback()
-                print('[{0}] - {1}'.format(
-                                    colored('ERROR!', 'red'),
-                                    colored(error, 'pink')))
+                print_msg('error', error)
 
 
 if conn.is_connected():
     cursor.close()
     conn.close()
-    print('[--{0}--] - {1}'.format(colored('OK', 'green'),
-                                   colored('Connection to MySQL closed!',
-                                           'yellow')))
+    print_msg('ok', 'Connection to MySQL closed!')
