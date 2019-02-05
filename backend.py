@@ -16,7 +16,8 @@ def connect_to_db(user_name: str, db_name: str):
         db_conn = mysql.connector.connect(
                                     user=user_name,
                                     host='127.0.0.1',
-                                    database=db_name if db_name is not None else 'backend',
+                                    database=db_name if db_name is not None
+                                    else 'backend',
                                     unix_socket='/var/run/mysqld/mysqld.sock'
                                     )
         cursor = db_conn.cursor()
@@ -34,11 +35,16 @@ def connect_to_db(user_name: str, db_name: str):
         return db_conn
 
 
-parser = argparse.ArgumentParser(description='Parsing file with payments info and make changes in database.')
-parser.add_argument('-u','--user', required=True, help='User name for MySQL.')
-parser.add_argument('-d', '--database', required=False, help='Database name ("backend" by default).')
-parser.add_argument('-f', '--file', required=False, help='CSV file with payments info ("payments.csv" by default).')
-parser.add_argument('-o', '--output', required=False, help='Name of output file.')
+parser = argparse.ArgumentParser(description="""Parsing file with payments
+                                 info and make changes in database.""")
+parser.add_argument('-u', '--user', required=True, help='User name for MySQL.')
+parser.add_argument('-d', '--database', required=False,
+                    help='Database name ("backend" by default).')
+parser.add_argument('-f', '--file', required=False,
+                    help="""CSV file with payments info
+                    ("payments.csv" by default).""")
+parser.add_argument('-o', '--output', required=False,
+                    help='Name of output file.')
 args = vars(parser.parse_args())
 
 
@@ -62,10 +68,10 @@ cursor = conn.cursor()
 
 """1. Спарсить данные из входного файла."""
 
-"""Parsing csv file to dict(list()) structure."""
 
 # Reading file.
 def create_csv_dict(file_name: str):
+    """Parsing csv file to dict(list()) structure."""
     csv_temp_dict = dict()
     with open('payments.csv' if file_name is None else file_name) as f:
         csv_reader = csv.DictReader(f, delimiter=',')
@@ -190,10 +196,9 @@ for i in range(len(result['Result'])):
         result['Result'][i] = 'Пользователь с таким ИНН не найден.'
 
 
-with open(args['output'] if args['output'] is not None else 'output.csv',
-          'w') as f:
+with open(args['output'] if args['output'] is not None else 'output.csv', 'w') as f:
     csv_writer = csv.writer(f, delimiter=' ', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    csv_writer.writerow(result.keys()) 
+    csv_writer.writerow(result.keys())
 
     rows = []
     for i in range(len(result['Date'])):
