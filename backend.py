@@ -197,7 +197,7 @@ for i in range(len(result['Result'])):
 
 
 with open(args['output'] if args['output'] is not None else 'output.csv', 'w') as f:
-    csv_writer = csv.writer(f, delimiter=' ', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     csv_writer.writerow(result.keys())
 
     rows = []
@@ -206,7 +206,7 @@ with open(args['output'] if args['output'] is not None else 'output.csv', 'w') a
         for k in result.keys():
             row += result[k][i]
         rows.append(row)
-    csv_writer.writerows(rows)
+    csv_writer.writerows([rows])
 
 
 """Find the last index in payments table."""
