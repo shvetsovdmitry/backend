@@ -50,7 +50,11 @@ if conn.is_connected():
 # Dictionary with all the csv table.
 csv_dict = dict()
 # Reading file.
+<<<<<<< HEAD
 with open('payments.csv') as f:
+=======
+with open('payments.csv') as f:
+>>>>>>> test
     csv_reader = csv.DictReader(f, delimiter=',')
     for row in csv_reader:
         # Filling the header of the table.
