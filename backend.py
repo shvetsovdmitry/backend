@@ -16,7 +16,8 @@ def connect_to_db(user_name: str, db_name: str):
         db_conn = mysql.connector.connect(
                                     user=user_name,
                                     host='127.0.0.1',
-                                    database=db_name if db_name is not None else 'backend',
+                                    database=db_name if db_name is not None
+                                    else 'backend',
                                     unix_socket='/var/run/mysqld/mysqld.sock'
                                     )
         cursor = db_conn.cursor()
@@ -34,10 +35,14 @@ def connect_to_db(user_name: str, db_name: str):
         return db_conn
 
 
-parser = argparse.ArgumentParser(description='Parsing file with payments info and make changes in database.')
-parser.add_argument('-u','--user', required=True, help='User name for MySQL.')
-parser.add_argument('-d', '--database', required=False, help='Database name ("backend" by default).')
-parser.add_argument('-f', '--file', required=False, help='CSV file with payments info ("payments.csv" by default).')
+parser = argparse.ArgumentParser(description="""Parsing file with payments info
+                                 and make changes in database.""")
+parser.add_argument('-u', '--user', required=True, help='User name for MySQL.')
+parser.add_argument('-d', '--database', required=False,
+                    help='Database name ("backend" by default).')
+parser.add_argument('-f', '--file', required=False,
+                    help="""CSV file with payments info
+                    ("payments.csv" by default).""")
 
 args = vars(parser.parse_args())
 
@@ -63,6 +68,7 @@ cursor = conn.cursor()
 """1. Спарсить данные из входного файла."""
 
 """Parsing csv file to dict(list()) structure."""
+
 
 # Reading file.
 def create_csv_dict(file_name: str):
