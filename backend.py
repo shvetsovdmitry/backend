@@ -197,16 +197,11 @@ for i in range(len(result['Result'])):
 
 
 with open(args['output'] if args['output'] is not None else 'output.csv', 'w') as f:
-    csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    csv_writer.writerow(result.keys())
-
-    rows = []
+    csv_writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL, escapechar=' ', quotechar='"')
+    keys = list(result.keys())
+    csv_writer.writerow([keys[0], keys[1], keys[2], keys[3]])
     for i in range(len(result['Date'])):
-        row = ''
-        for k in result.keys():
-            row += result[k][i]
-        rows.append(row)
-    csv_writer.writerows([rows])
+        csv_writer.writerow([result['Date'][i], result['Info'][i], result['Sum'][i], result['Result'][i]])
 
 
 """Find the last index in payments table."""
