@@ -24,9 +24,9 @@ DROP TABLE IF EXISTS `payments`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `payments` (
   `id` int(6) NOT NULL,
-  `id_user` int(6) NOT NULL,
+  `id_user` varchar(255) NOT NULL,
   `date` date NOT NULL,
-  `sum` float(8,4) NOT NULL,
+  `sum` float(8,2) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
