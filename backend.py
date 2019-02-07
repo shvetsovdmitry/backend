@@ -35,6 +35,9 @@ def connect_to_db(user_name: str, db_name: str):
         return db_conn
 
 
+# Init timer.
+start_timer = time.time()
+
 parser = argparse.ArgumentParser(description="""Parsing file with payments
                                  info and make changes in database.""")
 parser.add_argument('-u', '--user', required=True, help='User name for MySQL.')
@@ -60,6 +63,9 @@ def print_msg(status: str, msg: str):
     elif status == 'status':
         print('[{0}] - {1}'.format(colored('STATUS', 'yellow'),
                                    colored(msg, 'green')))
+    elif status == 'time':
+        print('[-{0}-] - {1}'.format(colored('TIME', 'magenta'),
+              'Execution time -> {0}'.format(msg)))
 
 
 conn = connect_to_db(args['user'], args['database'])
@@ -236,3 +242,4 @@ if conn.is_connected():
     cursor.close()
     conn.close()
     print_msg('ok', 'Connection to MySQL closed!')
+    print_msg('time', '{0}s.'.format(round(time.time() - start_timer, 2)))
